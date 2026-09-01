@@ -1,0 +1,1084 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+  <title>VibeSplit ⚡ AI Group Expense Splitter</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;500;600;700;800;900&family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet" />
+  <!-- Tailwind CSS CDN -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <!-- Lucide Icons -->
+  <script src="https://unpkg.com/lucide@latest"></script>
+  <!-- Canvas Confetti -->
+  <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.9.2/dist/confetti.browser.min.js"></script>
+  <!-- Chart.js -->
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <!-- QR Code Generator -->
+  <script src="https://cdn.jsdelivr.net/npm/qrcode@1.5.3/build/qrcode.min.js"></script>
+  
+  <script>
+    tailwind.config = {
+      darkMode: 'class',
+      theme: {
+        extend: {
+          fontFamily: {
+            sans: ['"Plus Jakarta Sans"', 'sans-serif'],
+            display: ['"Outfit"', 'sans-serif'],
+          }
+        }
+      }
+    }
+  </script>
+  <link rel="stylesheet" href="./style.css" />
+</head>
+<body class="font-sans min-h-screen antialiased flex flex-col md:flex-row overflow-x-hidden">
+
+  <!-- Toast Container -->
+  <div id="toast-container" class="fixed top-4 right-4 z-50 flex flex-col space-y-2 pointer-events-none max-w-sm w-full px-4"></div>
+
+  <!-- ==========================================
+       1. GEN-Z AUTHENTICATION PORTAL (SIGN IN / SIGN UP + EMAIL OTP)
+       Shown when user is not authenticated
+       ========================================== -->
+  <div id="auth-view" class="fixed inset-0 z-50 overflow-y-auto bg-gradient-to-br from-slate-50 via-violet-50/40 to-pink-50/30 dark:from-slate-950 dark:via-violet-950/20 dark:to-slate-900 flex items-center justify-center p-4">
+    
+    <!-- Ambient Floating Stickers Background -->
+    <div class="fixed inset-0 overflow-hidden pointer-events-none">
+      <div class="absolute top-10 left-10 text-4xl float-slow opacity-60">💸</div>
+      <div class="absolute top-20 right-20 text-5xl float-reverse opacity-70">💅</div>
+      <div class="absolute bottom-20 left-16 text-5xl float-slow opacity-60">🧋</div>
+      <div class="absolute bottom-12 right-24 text-4xl float-reverse opacity-70">✨</div>
+      <div class="absolute top-1/2 left-8 text-3xl float-slow opacity-50">🍕</div>
+      <div class="absolute top-1/3 right-12 text-4xl float-reverse opacity-50">🪩</div>
+      
+      <!-- Glowing Blurs -->
+      <div class="absolute -top-32 -left-32 w-80 h-80 bg-violet-400/20 dark:bg-violet-600/10 rounded-full blur-3xl"></div>
+      <div class="absolute -bottom-32 -right-32 w-80 h-80 bg-pink-400/20 dark:bg-pink-600/10 rounded-full blur-3xl"></div>
+    </div>
+
+    <div class="glass-panel w-full max-w-md rounded-3xl p-6 sm:p-8 shadow-2xl relative z-10 space-y-6">
+      
+      <!-- Brand Logo & Motto -->
+      <div class="text-center space-y-2">
+        <div class="inline-flex w-14 h-14 rounded-2xl bg-gradient-to-tr from-violet-600 via-pink-500 to-cyan-400 p-0.5 shadow-lg shadow-violet-500/25">
+          <div class="w-full h-full bg-white dark:bg-slate-900 rounded-[14px] flex items-center justify-center">
+            <span class="text-2xl">⚡</span>
+          </div>
+        </div>
+        <h2 class="font-display font-extrabold text-2xl sm:text-3xl text-slate-900 dark:text-white tracking-tight">
+          Welcome to <span class="bg-gradient-to-r from-violet-600 via-pink-600 to-cyan-500 bg-clip-text text-transparent">VibeSplit</span>
+        </h2>
+        <p class="text-xs text-slate-500 dark:text-slate-400">
+          Split tabs, roast debts & keep the vibe intact 💅✨
+        </p>
+      </div>
+
+      <!-- Auth Mode Switcher Tabs (Sign In / Sign Up) -->
+      <div class="grid grid-cols-2 gap-1.5 bg-slate-100 dark:bg-slate-800/80 p-1 rounded-2xl border border-slate-200 dark:border-white/5">
+        <button type="button" onclick="app.setAuthMode('login')" id="auth-tab-login" class="py-2 rounded-xl text-xs font-bold transition bg-white dark:bg-slate-700 text-slate-900 dark:text-white shadow-sm">
+          Sign In
+        </button>
+        <button type="button" onclick="app.setAuthMode('register')" id="auth-tab-register" class="py-2 rounded-xl text-xs font-bold transition text-slate-500 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white">
+          Create Account
+        </button>
+      </div>
+
+      <!-- 1. SIGN IN FORM -->
+      <form id="login-form" onsubmit="app.handleAuthSubmit(event, 'login')" class="space-y-4">
+        <div>
+          <label class="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1">Username or Email</label>
+          <input type="text" id="login-identifier" required placeholder="e.g. your_username or you@email.com" class="w-full bg-white dark:bg-slate-900 border border-slate-200 dark:border-white/10 rounded-xl px-3.5 py-2.5 text-sm text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-violet-500 transition" />
+        </div>
+
+        <div>
+          <label class="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1">Password</label>
+          <input type="password" id="login-password" required placeholder="••••••••" class="w-full bg-white dark:bg-slate-900 border border-slate-200 dark:border-white/10 rounded-xl px-3.5 py-2.5 text-sm text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-violet-500 transition" />
+        </div>
+
+        <button type="submit" class="w-full py-3 bg-gradient-to-r from-violet-600 via-pink-600 to-rose-600 hover:from-violet-500 hover:to-pink-500 text-white font-display font-bold text-sm rounded-xl shadow-lg shadow-violet-500/25 transition hover:scale-[1.02] active:scale-[0.98]">
+          Sign In to VibeSplit 🚀
+        </button>
+      </form>
+
+      <!-- 2. CREATE ACCOUNT WITH 2-STEP EMAIL OTP VERIFICATION -->
+      <div id="register-container" class="hidden space-y-4">
+        
+        <!-- Step 1: User Account Form -->
+        <form id="register-step1-form" onsubmit="app.handleSendRegistrationOTP(event)" class="space-y-3.5">
+          <div>
+            <label class="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1">Full Name *</label>
+            <input type="text" id="reg-fullname" required placeholder="e.g. Dhairya Devani" class="w-full bg-white dark:bg-slate-900 border border-slate-200 dark:border-white/10 rounded-xl px-3.5 py-2 text-sm text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-violet-500" />
+          </div>
+
+          <div class="grid grid-cols-2 gap-2.5">
+            <div>
+              <label class="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1">Username *</label>
+              <input type="text" id="reg-username" required minlength="2" placeholder="e.g. dhairya" class="w-full bg-white dark:bg-slate-900 border border-slate-200 dark:border-white/10 rounded-xl px-3.5 py-2 text-sm text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-violet-500" />
+            </div>
+            <div>
+              <label class="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1">Email (for OTP) *</label>
+              <input type="email" id="reg-email" required placeholder="you@email.com" class="w-full bg-white dark:bg-slate-900 border border-slate-200 dark:border-white/10 rounded-xl px-3.5 py-2 text-sm text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-violet-500" />
+            </div>
+          </div>
+
+          <div>
+            <label class="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1">Password *</label>
+            <input type="password" id="reg-password" required minlength="4" placeholder="At least 4 chars" class="w-full bg-white dark:bg-slate-900 border border-slate-200 dark:border-white/10 rounded-xl px-3.5 py-2 text-sm text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-violet-500" />
+          </div>
+
+          <!-- Financial Persona Picker -->
+          <div>
+            <label class="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1.5">Pick Your Gen-Z Persona Tag</label>
+            <div class="grid grid-cols-2 gap-1.5 text-[11px]" id="reg-persona-picker">
+              <label class="flex items-center space-x-1.5 p-1.5 rounded-lg border border-slate-200 dark:border-white/10 bg-slate-50 dark:bg-slate-800 cursor-pointer">
+                <input type="radio" name="reg-persona" value="The Group Financier 💳" checked class="text-violet-600 focus:ring-0" />
+                <span>Financier 💳</span>
+              </label>
+              <label class="flex items-center space-x-1.5 p-1.5 rounded-lg border border-slate-200 dark:border-white/10 bg-slate-50 dark:bg-slate-800 cursor-pointer">
+                <input type="radio" name="reg-persona" value="Boba Baron 🧋" class="text-violet-600 focus:ring-0" />
+                <span>Boba Baron 🧋</span>
+              </label>
+              <label class="flex items-center space-x-1.5 p-1.5 rounded-lg border border-slate-200 dark:border-white/10 bg-slate-50 dark:bg-slate-800 cursor-pointer">
+                <input type="radio" name="reg-persona" value="Vibe Architect ✨" class="text-violet-600 focus:ring-0" />
+                <span>Vibe Architect ✨</span>
+              </label>
+              <label class="flex items-center space-x-1.5 p-1.5 rounded-lg border border-slate-200 dark:border-white/10 bg-slate-50 dark:bg-slate-800 cursor-pointer">
+                <input type="radio" name="reg-persona" value="Midnight Snacker 🍕" class="text-violet-600 focus:ring-0" />
+                <span>Snacker 🍕</span>
+              </label>
+            </div>
+          </div>
+
+          <div>
+            <label class="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1">UPI ID / Payment Handle (Optional)</label>
+            <input type="text" id="reg-payment-handle" placeholder="e.g. yourname@upi" class="w-full bg-white dark:bg-slate-900 border border-slate-200 dark:border-white/10 rounded-xl px-3.5 py-2 text-xs font-mono text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-violet-500" />
+          </div>
+
+          <button type="submit" id="btn-send-otp" class="w-full py-3 bg-gradient-to-r from-violet-600 via-pink-600 to-rose-600 hover:from-violet-500 hover:to-pink-500 text-white font-display font-bold text-sm rounded-xl shadow-lg transition hover:scale-[1.02] active:scale-[0.98] flex items-center justify-center space-x-2">
+            <span>Send Email Verification Code 📧</span>
+          </button>
+        </form>
+
+        <!-- Step 2: 6-Digit OTP Verification Form -->
+        <form id="register-step2-otp" onsubmit="app.handleVerifyAndRegister(event)" class="space-y-4 hidden text-center">
+          <div class="w-12 h-12 rounded-2xl bg-purple-100 dark:bg-purple-950/50 text-purple-600 dark:text-purple-300 mx-auto flex items-center justify-center text-2xl shadow-sm">
+            📩
+          </div>
+          <div>
+            <h3 class="font-display font-extrabold text-lg text-slate-900 dark:text-white">Enter 6-Digit Verification Code</h3>
+            <p class="text-xs text-slate-500 dark:text-slate-400 mt-1" id="otp-sent-to-text">
+              We sent a verification code to your email
+            </p>
+          </div>
+
+          <div>
+            <input type="text" id="reg-otp-code" required maxlength="6" pattern="[0-9]{6}" placeholder="• • • • • •" class="w-full bg-white dark:bg-slate-900 border-2 border-violet-400 dark:border-violet-500 rounded-2xl py-3 text-center text-2xl font-mono font-black tracking-[0.5em] text-violet-700 dark:text-violet-300 focus:outline-none focus:ring-4 focus:ring-violet-500/20" />
+          </div>
+
+          <button type="submit" id="btn-verify-otp" class="w-full py-3 bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-500 hover:to-teal-500 text-white font-display font-bold text-sm rounded-xl shadow-lg shadow-emerald-500/25 transition hover:scale-[1.02] active:scale-[0.98]">
+            Verify Code & Create Account ✨
+          </button>
+
+          <div class="flex items-center justify-between text-xs text-slate-500 dark:text-slate-400 pt-2 border-t border-slate-200 dark:border-white/5">
+            <button type="button" onclick="app.backToRegistrationStep1()" class="hover:text-slate-900 dark:hover:text-white underline">
+              ← Edit details
+            </button>
+            <button type="button" onclick="app.handleResendOTP()" class="text-violet-600 dark:text-violet-400 font-bold hover:underline">
+              Resend Code 🔄
+            </button>
+          </div>
+        </form>
+
+      </div>
+
+      <!-- Cloud API URL / Backend Connection Trigger -->
+      <div class="pt-4 border-t border-slate-200 dark:border-white/5 text-center">
+        <button onclick="app.openModal('backend-settings-modal')" class="text-[11px] font-semibold text-slate-500 dark:text-slate-400 hover:text-violet-600 dark:hover:text-violet-300 transition flex items-center justify-center space-x-1 mx-auto">
+          <span>🌐 Cloud Backend Settings & Cross-Device Sync</span>
+        </button>
+      </div>
+
+    </div>
+  </div>
+
+
+  <!-- ==========================================
+       2. MAIN DASHBOARD SHELL (SHOWN WHEN LOGGED IN)
+       ========================================== -->
+  <div id="dashboard-view" class="hidden flex-1 flex flex-col md:flex-row min-h-screen">
+    
+    <!-- Mobile Drawer Backdrop -->
+    <div id="mobile-drawer-backdrop" class="fixed inset-0 bg-slate-900/50 backdrop-blur-sm z-40 hidden md:hidden transition-opacity" onclick="app.toggleMobileDrawer(false)"></div>
+
+    <!-- SIDEBAR NAVIGATION -->
+    <aside id="sidebar" class="fixed md:sticky top-0 left-0 h-screen w-72 glass-sidebar z-40 flex flex-col justify-between p-5 transition-transform duration-300 -translate-x-full md:translate-x-0 shrink-0 shadow-xl md:shadow-none">
+      
+      <div class="space-y-6 overflow-y-auto">
+        
+        <!-- Brand Header -->
+        <div class="flex items-center justify-between">
+          <div class="flex items-center space-x-3 cursor-pointer" onclick="app.switchTab('expenses'); app.toggleMobileDrawer(false);">
+            <div class="w-10 h-10 rounded-2xl bg-gradient-to-br from-violet-600 to-pink-500 p-0.5 flex items-center justify-center shadow-md shadow-violet-500/20">
+              <div class="w-full h-full bg-white dark:bg-slate-900 rounded-[14px] flex items-center justify-center">
+                <span class="text-xl">⚡</span>
+              </div>
+            </div>
+            <div>
+              <h1 class="font-display font-extrabold text-xl tracking-tight bg-gradient-to-r from-violet-600 via-pink-600 to-cyan-500 bg-clip-text text-transparent">
+                VibeSplit
+              </h1>
+              <span class="text-[10px] font-bold text-violet-600 dark:text-violet-400 uppercase tracking-wider">AI Expense Splitter</span>
+            </div>
+          </div>
+
+          <button onclick="app.toggleMobileDrawer(false)" class="md:hidden p-2 rounded-xl text-slate-400 hover:text-slate-700 dark:hover:text-white">
+            <i data-lucide="x" class="w-5 h-5"></i>
+          </button>
+        </div>
+
+        <!-- Active Group Switcher Card -->
+        <div class="bg-slate-100 dark:bg-slate-800/80 p-3 rounded-2xl border border-slate-200 dark:border-white/5 space-y-2">
+          <div class="flex items-center justify-between text-[11px] font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400">
+            <span>Active Group</span>
+            <button onclick="app.openModal('create-group-modal'); app.toggleMobileDrawer(false);" class="text-violet-600 dark:text-violet-400 hover:underline flex items-center space-x-0.5 font-bold">
+              <i data-lucide="plus" class="w-3.5 h-3.5"></i>
+              <span>New</span>
+            </button>
+          </div>
+          <select id="sidebar-group-select" class="w-full bg-white dark:bg-slate-900 text-slate-800 dark:text-white font-bold text-sm rounded-xl p-2.5 border border-slate-200 dark:border-white/10 focus:outline-none focus:ring-2 focus:ring-violet-500 cursor-pointer" onchange="app.changeActiveGroup(this.value)">
+            <!-- Dynamic Group Options -->
+          </select>
+        </div>
+
+        <!-- Main Navigation Links -->
+        <nav class="space-y-1.5">
+          <div class="text-[10px] font-bold uppercase tracking-wider text-slate-400 dark:text-slate-500 px-3 py-1">Dashboard</div>
+          
+          <button onclick="app.switchTab('expenses'); app.toggleMobileDrawer(false);" id="nav-btn-expenses" class="w-full flex items-center space-x-3 px-3.5 py-2.5 rounded-xl font-bold text-sm transition bg-violet-600 text-white shadow-md shadow-violet-500/20">
+            <i data-lucide="layout-dashboard" class="w-4 h-4"></i>
+            <span>Expenses Feed</span>
+          </button>
+
+          <button onclick="app.switchTab('balances'); app.toggleMobileDrawer(false);" id="nav-btn-balances" class="w-full flex items-center space-x-3 px-3.5 py-2.5 rounded-xl font-semibold text-sm transition text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800/60">
+            <i data-lucide="scale" class="w-4 h-4 text-cyan-500"></i>
+            <span>Balances & Settle Graph</span>
+          </button>
+
+          <button onclick="app.openModal('invitations-modal'); app.toggleMobileDrawer(false);" id="nav-btn-invitations" class="w-full flex items-center justify-between px-3.5 py-2.5 rounded-xl font-semibold text-sm transition text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800/60">
+            <div class="flex items-center space-x-3">
+              <i data-lucide="bell" class="w-4 h-4 text-amber-500"></i>
+              <span>Group Invites</span>
+            </div>
+            <span id="sidebar-invite-badge" class="hidden px-2 py-0.5 rounded-full text-[10px] font-bold bg-pink-500 text-white pulse-badge">
+              0
+            </span>
+          </button>
+
+          <button onclick="app.switchTab('vibe-check'); app.toggleMobileDrawer(false);" id="nav-btn-vibe-check" class="w-full flex items-center space-x-3 px-3.5 py-2.5 rounded-xl font-semibold text-sm transition text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800/60">
+            <i data-lucide="sparkles" class="w-4 h-4 text-pink-500"></i>
+            <span>AI Vibe Check & Badges</span>
+          </button>
+
+          <button onclick="app.switchTab('activity'); app.toggleMobileDrawer(false);" id="nav-btn-activity" class="w-full flex items-center space-x-3 px-3.5 py-2.5 rounded-xl font-semibold text-sm transition text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800/60">
+            <i data-lucide="activity" class="w-4 h-4 text-emerald-500"></i>
+            <span>Activity Log</span>
+          </button>
+        </nav>
+
+        <!-- AI Gen-Z Power Tools Section -->
+        <div class="space-y-1.5 pt-2 border-t border-slate-200 dark:border-white/5">
+          <div class="text-[10px] font-bold uppercase tracking-wider text-slate-400 dark:text-slate-500 px-3 py-1">AI Gen-Z Tools</div>
+
+          <button onclick="app.openModal('nlp-modal'); app.toggleMobileDrawer(false);" class="w-full flex items-center space-x-3 px-3.5 py-2 rounded-xl text-xs font-semibold text-slate-700 dark:text-slate-200 hover:bg-violet-50 dark:hover:bg-violet-950/30 hover:text-violet-600 dark:hover:text-violet-300 transition">
+            <span class="p-1 rounded-lg bg-violet-100 dark:bg-violet-900/50 text-violet-600 dark:text-violet-300"><i data-lucide="sparkles" class="w-3.5 h-3.5"></i></span>
+            <span>Magic AI Split (NLP)</span>
+          </button>
+
+          <button onclick="app.openRoastModal(); app.toggleMobileDrawer(false);" class="w-full flex items-center space-x-3 px-3.5 py-2 rounded-xl text-xs font-semibold text-slate-700 dark:text-slate-200 hover:bg-pink-50 dark:hover:bg-pink-950/30 hover:text-pink-600 dark:hover:text-pink-300 transition">
+            <span class="p-1 rounded-lg bg-pink-100 dark:bg-pink-900/50 text-pink-600 dark:text-pink-300">💅</span>
+            <span>Debt Roaster & Nudger</span>
+          </button>
+
+          <button onclick="app.openModal('receipt-scan-modal'); app.toggleMobileDrawer(false);" class="w-full flex items-center space-x-3 px-3.5 py-2 rounded-xl text-xs font-semibold text-slate-700 dark:text-slate-200 hover:bg-cyan-50 dark:hover:bg-cyan-950/30 hover:text-cyan-600 dark:hover:text-cyan-300 transition">
+            <span class="p-1 rounded-lg bg-cyan-100 dark:bg-cyan-900/50 text-cyan-600 dark:text-cyan-300"><i data-lucide="scan-line" class="w-3.5 h-3.5"></i></span>
+            <span>AI Bill & Receipt Scanner</span>
+          </button>
+        </div>
+
+      </div>
+
+      <!-- Bottom Part: Theme Selector & User Profile Switcher -->
+      <div class="space-y-3 pt-4 border-t border-slate-200 dark:border-white/5">
+        
+        <!-- Theme Switcher -->
+        <div class="flex items-center justify-between bg-slate-100 dark:bg-slate-800 p-1 rounded-xl">
+          <button onclick="app.setTheme('light')" id="theme-btn-light" class="flex-1 py-1.5 rounded-lg text-xs font-bold transition flex items-center justify-center space-x-1 bg-white dark:bg-slate-700 text-slate-900 dark:text-white shadow-sm">
+            <span>☀️ Light</span>
+          </button>
+          <button onclick="app.setTheme('dark')" id="theme-btn-dark" class="flex-1 py-1.5 rounded-lg text-xs font-bold transition flex items-center justify-center space-x-1 text-slate-500 dark:text-slate-400">
+            <span>🌙 Dark</span>
+          </button>
+          <button onclick="app.setTheme('pastel')" id="theme-btn-pastel" class="flex-1 py-1.5 rounded-lg text-xs font-bold transition flex items-center justify-center space-x-1 text-slate-500 dark:text-slate-400">
+            <span>🌸 Pastel</span>
+          </button>
+        </div>
+
+        <!-- Current Logged In User Card & Logout -->
+        <div class="flex items-center justify-between p-2.5 rounded-2xl bg-slate-100 dark:bg-slate-800/90 border border-slate-200 dark:border-white/5">
+          <div class="flex items-center space-x-2.5 overflow-hidden flex-1">
+            <img id="sidebar-user-avatar" src="https://api.dicebear.com/7.x/bottts/svg?seed=user" class="w-9 h-9 rounded-xl bg-violet-100 dark:bg-violet-900/40 shrink-0" />
+            <div class="truncate">
+              <div class="text-xs font-bold text-slate-900 dark:text-white truncate" id="sidebar-user-name">User</div>
+              <div class="text-[10px] text-violet-600 dark:text-violet-400 font-medium truncate" id="sidebar-user-persona">The Group Financier 💳</div>
+            </div>
+          </div>
+
+          <!-- Sign Out Button -->
+          <button onclick="app.handleLogout()" class="p-1.5 rounded-lg text-slate-400 hover:text-rose-600 dark:hover:text-rose-400 transition" title="Sign Out">
+            <i data-lucide="log-out" class="w-4 h-4"></i>
+          </button>
+        </div>
+
+      </div>
+    </aside>
+
+    <!-- MAIN VIEW CONTAINER -->
+    <div class="flex-1 flex flex-col min-w-0 pb-20 md:pb-8">
+      
+      <!-- Mobile Top Navigation Header -->
+      <header class="md:hidden glass-panel sticky top-0 z-30 px-4 py-3 flex items-center justify-between border-b">
+        <div class="flex items-center space-x-2.5">
+          <button onclick="app.toggleMobileDrawer(true)" class="p-2 rounded-xl bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-200">
+            <i data-lucide="menu" class="w-5 h-5"></i>
+          </button>
+          <div class="flex items-center space-x-2">
+            <span class="text-xl" id="mobile-header-emoji">🏖️</span>
+            <h2 class="font-display font-extrabold text-base text-slate-900 dark:text-white truncate max-w-[150px]" id="mobile-header-title">
+              VibeSplit
+            </h2>
+          </div>
+        </div>
+
+        <div class="flex items-center space-x-2">
+          <!-- Notification bell on mobile -->
+          <button onclick="app.openModal('invitations-modal')" class="relative p-2 rounded-xl bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-200">
+            <i data-lucide="bell" class="w-5 h-5 text-amber-500"></i>
+            <span id="mobile-invite-badge" class="hidden absolute -top-1 -right-1 w-4 h-4 rounded-full bg-pink-500 text-white text-[9px] font-black flex items-center justify-center">
+              0
+            </span>
+          </button>
+          <button onclick="app.handleLogout()" class="p-2 rounded-xl bg-slate-100 dark:bg-slate-800 text-rose-500" title="Log Out">
+            <i data-lucide="log-out" class="w-4 h-4"></i>
+          </button>
+        </div>
+      </header>
+
+      <!-- Main Content Area -->
+      <div class="max-w-5xl w-full mx-auto px-4 sm:px-6 lg:px-8 pt-4 sm:pt-6 space-y-6">
+
+        <!-- PENDING GROUP INVITATIONS BANNER (DISPLAYS WHEN USER HAS UNACCEPTED INVITES) -->
+        <div id="pending-invites-banner" class="hidden bg-gradient-to-r from-amber-50 via-pink-50 to-violet-50 dark:from-amber-950/30 dark:via-pink-950/30 dark:to-violet-950/30 border border-amber-300/80 dark:border-amber-500/30 rounded-3xl p-4 sm:p-5 shadow-md flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
+          <div class="flex items-start space-x-3.5">
+            <div class="w-10 h-10 rounded-2xl bg-amber-100 dark:bg-amber-900/50 text-amber-600 dark:text-amber-300 flex items-center justify-center text-xl shrink-0">
+              🎉
+            </div>
+            <div>
+              <div class="text-xs font-bold uppercase tracking-wider text-amber-700 dark:text-amber-300" id="pending-invites-title">
+                Pending Group Invitations
+              </div>
+              <p class="text-xs sm:text-sm text-slate-700 dark:text-slate-200 mt-0.5" id="pending-invites-desc">
+                You have been invited to join group tabs!
+              </p>
+            </div>
+          </div>
+          <button onclick="app.openModal('invitations-modal')" class="px-4 py-2 bg-gradient-to-r from-amber-500 to-pink-500 text-white rounded-xl text-xs font-bold shadow-md hover:scale-105 transition shrink-0">
+            View & Join Groups 🚀
+          </button>
+        </div>
+
+        <!-- HERO OVERVIEW CARD -->
+        <section class="glass-panel rounded-3xl p-5 sm:p-6 relative overflow-hidden">
+          
+          <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-5 border-b border-slate-200/80 dark:border-white/5">
+            <div class="flex items-start space-x-3.5">
+              <div id="group-hero-emoji" class="w-14 h-14 rounded-2xl bg-violet-100 dark:bg-violet-950/40 text-violet-600 dark:text-violet-300 flex items-center justify-center text-3xl shrink-0 shadow-sm">
+                🏖️
+              </div>
+              <div>
+                <div class="flex items-center space-x-2 flex-wrap gap-y-1">
+                  <h2 id="group-hero-title" class="font-display font-extrabold text-xl sm:text-2xl text-slate-900 dark:text-white">
+                    Welcome to VibeSplit ⚡
+                  </h2>
+                  <span id="group-member-pill" class="px-2.5 py-0.5 rounded-full text-xs font-semibold bg-slate-100 dark:bg-white/10 text-slate-600 dark:text-slate-300">
+                    0 Groups
+                  </span>
+                </div>
+                <p id="group-hero-desc" class="text-xs sm:text-sm text-slate-500 dark:text-slate-400 mt-1 max-w-lg line-clamp-1">
+                  Create your first group tab to start tracking expenses with friends!
+                </p>
+              </div>
+            </div>
+
+            <div class="flex items-center space-x-2 self-start sm:self-auto">
+              <button onclick="app.openModal('add-member-modal')" class="px-3 py-2 bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 rounded-xl text-xs font-bold transition flex items-center space-x-1.5">
+                <i data-lucide="user-plus" class="w-3.5 h-3.5 text-violet-500"></i>
+                <span>Invite Friend</span>
+              </button>
+              <button onclick="app.openModal('add-expense-modal')" class="px-4 py-2 bg-gradient-to-r from-violet-600 to-pink-600 hover:from-violet-500 hover:to-pink-500 text-white rounded-xl text-xs font-bold shadow-md shadow-violet-500/20 transition flex items-center space-x-1.5">
+                <i data-lucide="plus" class="w-4 h-4"></i>
+                <span>Add Expense</span>
+              </button>
+            </div>
+          </div>
+
+          <!-- 3 Stat Cards -->
+          <div class="grid grid-cols-1 sm:grid-cols-3 gap-3.5 pt-5">
+            
+            <div class="bg-violet-50/60 dark:bg-slate-900/90 border border-violet-100 dark:border-white/5 rounded-2xl p-4 flex items-center justify-between">
+              <div>
+                <span class="text-[11px] font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400">Total Group Spent</span>
+                <div class="text-2xl font-display font-black text-slate-900 dark:text-white mt-1" id="stat-total-spent">
+                  ₹0.00
+                </div>
+                <span class="text-[10px] text-violet-600 dark:text-violet-400 font-semibold">Group Lifetime</span>
+              </div>
+              <div class="w-11 h-11 rounded-xl bg-violet-100 dark:bg-violet-900/40 text-violet-600 dark:text-violet-300 flex items-center justify-center text-xl">
+                💸
+              </div>
+            </div>
+
+            <div class="bg-emerald-50/60 dark:bg-slate-900/90 border border-emerald-100 dark:border-white/5 rounded-2xl p-4 flex items-center justify-between" id="stat-net-card">
+              <div>
+                <span class="text-[11px] font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400" id="stat-net-label">Your Balance</span>
+                <div class="text-2xl font-display font-black text-emerald-600 dark:text-emerald-400 mt-1" id="stat-net-balance">
+                  ₹0.00
+                </div>
+                <span class="text-[10px] text-emerald-600 dark:text-emerald-400/90 font-semibold" id="stat-net-subtitle">Clean Slate ✨</span>
+              </div>
+              <div class="w-11 h-11 rounded-xl bg-emerald-100 dark:bg-emerald-900/40 text-emerald-600 dark:text-emerald-300 flex items-center justify-center text-xl" id="stat-net-icon">
+                ✨
+              </div>
+            </div>
+
+            <div class="bg-cyan-50/60 dark:bg-slate-900/90 border border-cyan-100 dark:border-white/5 rounded-2xl p-4 flex items-center justify-between cursor-pointer hover:border-cyan-400 transition" onclick="app.switchTab('balances')">
+              <div>
+                <span class="text-[11px] font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400">Smart Settle</span>
+                <div class="text-2xl font-display font-black text-cyan-600 dark:text-cyan-400 mt-1" id="stat-simplified-count">
+                  0 Debts
+                </div>
+                <span class="text-[10px] text-cyan-600 dark:text-cyan-400 font-semibold">Minimized Graph &rarr;</span>
+              </div>
+              <div class="w-11 h-11 rounded-xl bg-cyan-100 dark:bg-cyan-900/40 text-cyan-600 dark:text-cyan-300 flex items-center justify-center text-xl">
+                ⚖️
+              </div>
+            </div>
+
+          </div>
+
+        </section>
+
+        <!-- TAB 1: EXPENSES FEED -->
+        <main id="tab-expenses" class="tab-content space-y-4">
+          
+          <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+            <div class="flex items-center space-x-2">
+              <h3 class="font-display font-bold text-lg text-slate-900 dark:text-white">Recent Expenses</h3>
+              <span class="text-xs text-slate-500 dark:text-slate-400 font-medium" id="expenses-count-text">(0 expenses)</span>
+            </div>
+
+            <div class="flex items-center space-x-2">
+              <div class="relative flex-1 sm:flex-initial">
+                <i data-lucide="search" class="w-3.5 h-3.5 text-slate-400 absolute left-3 top-2.5"></i>
+                <input type="text" id="expense-search" placeholder="Search..." onkeyup="app.filterExpenses()" class="w-full sm:w-44 bg-white dark:bg-slate-900 border border-slate-200 dark:border-white/10 rounded-xl pl-8 pr-3 py-1.5 text-xs text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-violet-500 transition" />
+              </div>
+
+              <select id="expense-category-filter" onchange="app.filterExpenses()" class="bg-white dark:bg-slate-900 border border-slate-200 dark:border-white/10 rounded-xl px-2.5 py-1.5 text-xs text-slate-700 dark:text-slate-300 focus:outline-none cursor-pointer">
+                <option value="all">All Vibes</option>
+                <option value="food">🍕 Food</option>
+                <option value="drink">🧋 Drinks</option>
+                <option value="travel">✈️ Travel</option>
+                <option value="party">🪩 Party</option>
+                <option value="housing">🏠 Housing</option>
+                <option value="vibes">✨ Vibes</option>
+              </select>
+            </div>
+          </div>
+
+          <div class="bg-violet-50 dark:bg-violet-950/30 border border-violet-200 dark:border-violet-500/20 rounded-2xl p-3 text-xs flex items-center justify-between text-violet-900 dark:text-violet-200">
+            <div class="flex items-center space-x-2">
+              <span class="text-sm">🔒</span>
+              <span><strong>Strict Access Control:</strong> Only the person who created/added an expense can mark shares as settled or delete it.</span>
+            </div>
+            <span class="text-[10px] text-violet-600 dark:text-violet-400 font-bold uppercase tracking-wider hidden sm:inline">Protected</span>
+          </div>
+
+          <div id="expenses-list" class="space-y-3.5">
+            <!-- Rendered via app.renderExpenses() -->
+          </div>
+        </main>
+
+        <!-- TAB 2: BALANCES & SIMPLIFIED GRAPH TAB -->
+        <main id="tab-balances" class="tab-content hidden space-y-6">
+          
+          <div class="glass-panel border-cyan-200 dark:border-cyan-500/20 rounded-3xl p-5 sm:p-6 relative overflow-hidden">
+            <div class="flex items-center justify-between mb-4">
+              <div class="flex items-center space-x-3">
+                <span class="w-10 h-10 rounded-2xl bg-cyan-100 dark:bg-cyan-900/40 text-cyan-600 dark:text-cyan-300 flex items-center justify-center text-xl">
+                  ⚖️
+                </span>
+                <div>
+                  <h3 class="font-display font-extrabold text-lg text-slate-900 dark:text-white">Smart Debt Minimizer</h3>
+                  <p class="text-xs text-slate-500 dark:text-slate-400">Graph algorithm reduces circular debts down to minimal direct payments.</p>
+                </div>
+              </div>
+              <span class="px-2.5 py-1 rounded-full bg-cyan-100 dark:bg-cyan-900/40 text-cyan-700 dark:text-cyan-300 text-xs font-bold">
+                Algorithm
+              </span>
+            </div>
+
+            <div id="simplified-debts-list" class="space-y-3">
+              <!-- Rendered via app.renderSimplifiedDebts() -->
+            </div>
+          </div>
+
+          <div class="glass-panel rounded-3xl p-5 sm:p-6 space-y-4">
+            <div class="flex items-center justify-between">
+              <h3 class="font-display font-bold text-lg text-slate-900 dark:text-white">Individual Member Balances</h3>
+              <span class="text-xs text-slate-400 font-medium">Net Standing</span>
+            </div>
+            <div id="member-balances-list" class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+              <!-- Rendered via app.renderBalances() -->
+            </div>
+          </div>
+
+        </main>
+
+        <!-- TAB 3: AI VIBE CHECK & BADGES TAB -->
+        <main id="tab-vibe-check" class="tab-content hidden space-y-6">
+          <div class="glass-panel border-pink-200 dark:border-pink-500/20 rounded-3xl p-5 sm:p-6 space-y-6">
+            
+            <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-5 border-b border-slate-200 dark:border-white/5">
+              <div>
+                <div class="flex items-center space-x-2">
+                  <span class="text-2xl">🔮</span>
+                  <h3 class="font-display font-extrabold text-xl text-slate-900 dark:text-white">Group Spending Vibe Check</h3>
+                </div>
+                <p class="text-xs text-slate-500 dark:text-slate-400 mt-1">AI analysis of group spending patterns, awards, and financial horoscope.</p>
+              </div>
+
+              <div class="flex items-center space-x-3 bg-pink-50 dark:bg-pink-950/30 border border-pink-200 dark:border-pink-500/30 rounded-2xl px-4 py-2 self-start sm:self-auto">
+                <div class="text-right">
+                  <div class="text-[10px] uppercase font-bold text-pink-600 dark:text-pink-300">Vibe Score</div>
+                  <div class="text-2xl font-display font-black text-pink-600 dark:text-pink-400" id="vibe-score-val">94/100</div>
+                </div>
+                <span class="text-2xl">🌟</span>
+              </div>
+            </div>
+
+            <div class="bg-gradient-to-r from-violet-50 to-pink-50 dark:from-violet-950/30 dark:to-pink-950/30 border border-pink-200 dark:border-pink-500/20 rounded-2xl p-4">
+              <div class="text-xs font-bold text-pink-600 dark:text-pink-300 uppercase tracking-wider flex items-center space-x-1.5 mb-1">
+                <i data-lucide="sparkles" class="w-3.5 h-3.5"></i>
+                <span id="vibe-summary-title">Elite Main Character Energy 🌟</span>
+              </div>
+              <p id="vibe-summary-text" class="text-xs sm:text-sm text-slate-700 dark:text-slate-200 leading-relaxed">
+                Analyzing group dynamics...
+              </p>
+            </div>
+
+            <div class="grid grid-cols-1 lg:grid-cols-12 gap-6">
+              
+              <div class="lg:col-span-5 bg-white dark:bg-slate-900/80 border border-slate-200 dark:border-white/5 rounded-2xl p-4 flex flex-col items-center justify-center">
+                <h4 class="font-display font-bold text-xs text-slate-600 dark:text-slate-300 mb-3 self-start">Spending Breakdown</h4>
+                <div class="w-56 h-56 relative">
+                  <canvas id="vibeSpendingChart"></canvas>
+                </div>
+              </div>
+
+              <div class="lg:col-span-7 space-y-3">
+                <h4 class="font-display font-bold text-xs text-slate-600 dark:text-slate-300">Gen-Z Persona Badges</h4>
+                <div id="vibe-badges-container" class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                  <!-- Rendered via app.renderVibeBadges() -->
+                </div>
+              </div>
+
+            </div>
+
+          </div>
+        </main>
+
+        <!-- TAB 4: ACTIVITY LOGS TAB -->
+        <main id="tab-activity" class="tab-content hidden space-y-4">
+          <div class="glass-panel rounded-3xl p-5 sm:p-6 space-y-4">
+            <h3 class="font-display font-bold text-lg text-slate-900 dark:text-white flex items-center space-x-2">
+              <i data-lucide="activity" class="w-5 h-5 text-emerald-500"></i>
+              <span>Group Activity Feed</span>
+            </h3>
+            <div id="activity-list" class="space-y-3">
+              <!-- Rendered via app.renderActivity() -->
+            </div>
+          </div>
+        </main>
+
+      </div>
+    </div>
+
+    <!-- FLOATING ACTION BUTTON (FAB) FOR MOBILE -->
+    <div class="md:hidden fixed bottom-16 right-5 z-30">
+      <button onclick="app.openModal('add-expense-modal')" class="w-14 h-14 rounded-full bg-gradient-to-tr from-violet-600 to-pink-600 text-white flex items-center justify-center shadow-2xl shadow-violet-500/50 hover:scale-110 active:scale-95 transition">
+        <i data-lucide="plus" class="w-7 h-7"></i>
+      </button>
+    </div>
+
+    <!-- MOBILE STICKY BOTTOM NAVIGATION BAR -->
+    <nav class="md:hidden fixed bottom-0 left-0 right-0 glass-panel border-t z-30 px-3 py-2 flex items-center justify-around">
+      
+      <button onclick="app.switchTab('expenses')" id="mobile-tab-expenses" class="flex flex-col items-center space-y-1 text-violet-600 dark:text-violet-400">
+        <i data-lucide="layout-dashboard" class="w-5 h-5"></i>
+        <span class="text-[10px] font-bold">Feed</span>
+      </button>
+
+      <button onclick="app.switchTab('balances')" id="mobile-tab-balances" class="flex flex-col items-center space-y-1 text-slate-400">
+        <i data-lucide="scale" class="w-5 h-5"></i>
+        <span class="text-[10px] font-bold">Balances</span>
+      </button>
+
+      <button onclick="app.openModal('nlp-modal')" class="flex flex-col items-center space-y-1 text-slate-400">
+        <i data-lucide="sparkles" class="w-5 h-5 text-pink-500"></i>
+        <span class="text-[10px] font-bold">AI Split</span>
+      </button>
+
+      <button onclick="app.switchTab('vibe-check')" id="mobile-tab-vibe-check" class="flex flex-col items-center space-y-1 text-slate-400">
+        <i data-lucide="award" class="w-5 h-5"></i>
+        <span class="text-[10px] font-bold">Vibe</span>
+      </button>
+
+      <button onclick="app.toggleMobileDrawer(true)" class="flex flex-col items-center space-y-1 text-slate-400">
+        <i data-lucide="menu" class="w-5 h-5"></i>
+        <span class="text-[10px] font-bold">Menu</span>
+      </button>
+
+    </nav>
+
+  </div>
+
+
+  <!-- ==========================================
+       3. MODALS
+       ========================================== -->
+
+  <!-- MODAL: BACKEND CLOUD SETTINGS & CROSS-DEVICE SYNC -->
+  <div id="backend-settings-modal" class="modal-overlay hidden fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-sm">
+    <div class="glass-panel rounded-3xl w-full max-w-md p-6 shadow-2xl relative space-y-4">
+      <div class="flex items-center justify-between">
+        <div class="flex items-center space-x-2.5">
+          <div class="w-9 h-9 rounded-xl bg-violet-100 dark:bg-violet-900/50 text-violet-600 dark:text-violet-300 flex items-center justify-center">
+            <i data-lucide="server" class="w-5 h-5"></i>
+          </div>
+          <div>
+            <h3 class="font-display font-extrabold text-xl text-slate-900 dark:text-white">Centralized Cloud Backend</h3>
+            <p class="text-xs text-slate-500">Cross-Device & Multi-Computer Sync</p>
+          </div>
+        </div>
+        <button onclick="app.closeModal('backend-settings-modal')" class="p-1 rounded-lg text-slate-400 hover:text-slate-700 dark:hover:text-white">
+          <i data-lucide="x" class="w-5 h-5"></i>
+        </button>
+      </div>
+
+      <p class="text-xs text-slate-600 dark:text-slate-300 leading-relaxed">
+        To sync data in real-time across multiple computers and phones, enter your hosted backend API URL (e.g. on Render or Railway):
+      </p>
+
+      <div>
+        <label class="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1">Backend API URL</label>
+        <input type="url" id="custom-backend-url-input" placeholder="https://your-vibesplit-api.onrender.com" class="w-full bg-white dark:bg-slate-900 border border-slate-200 dark:border-white/10 rounded-xl px-3.5 py-2 text-xs font-mono text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-violet-500" />
+      </div>
+
+      <div class="flex space-x-2">
+        <button onclick="app.saveCustomBackendUrl()" class="flex-1 py-2.5 bg-violet-600 hover:bg-violet-500 text-white rounded-xl text-xs font-bold transition shadow-sm">
+          Save & Connect ⚡
+        </button>
+        <button onclick="app.clearCustomBackendUrl()" class="px-3 py-2.5 bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 rounded-xl text-xs font-semibold hover:bg-slate-200">
+          Reset to Default
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- MODAL: GROUP INVITATIONS NOTIFICATIONS -->
+  <div id="invitations-modal" class="modal-overlay hidden fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-sm">
+    <div class="glass-panel rounded-3xl w-full max-w-md p-6 shadow-2xl relative space-y-4">
+      <div class="flex items-center justify-between">
+        <div class="flex items-center space-x-2.5">
+          <div class="w-9 h-9 rounded-xl bg-amber-100 dark:bg-amber-900/50 text-amber-600 dark:text-amber-300 flex items-center justify-center">
+            <i data-lucide="bell" class="w-5 h-5"></i>
+          </div>
+          <div>
+            <h3 class="font-display font-extrabold text-xl text-slate-900 dark:text-white">Group Invitations</h3>
+            <p class="text-xs text-amber-600 dark:text-amber-400">Join tabs created by your friends</p>
+          </div>
+        </div>
+        <button onclick="app.closeModal('invitations-modal')" class="p-1 rounded-lg text-slate-400 hover:text-slate-700 dark:hover:text-white">
+          <i data-lucide="x" class="w-5 h-5"></i>
+        </button>
+      </div>
+
+      <div id="invitations-list-container" class="space-y-3 max-h-72 overflow-y-auto">
+        <!-- Rendered dynamically -->
+      </div>
+    </div>
+  </div>
+
+  <!-- MODAL: ADD EXPENSE -->
+  <div id="add-expense-modal" class="modal-overlay hidden fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-sm">
+    <div class="glass-panel rounded-3xl w-full max-w-lg p-6 shadow-2xl relative max-h-[90vh] overflow-y-auto">
+      
+      <div class="flex items-center justify-between mb-4">
+        <div class="flex items-center space-x-2.5">
+          <div class="w-9 h-9 rounded-xl bg-violet-100 dark:bg-violet-900/50 text-violet-600 dark:text-violet-300 flex items-center justify-center">
+            <i data-lucide="plus" class="w-5 h-5"></i>
+          </div>
+          <h3 class="font-display font-extrabold text-xl text-slate-900 dark:text-white">Add New Expense</h3>
+        </div>
+        <button onclick="app.closeModal('add-expense-modal')" class="p-1 rounded-lg text-slate-400 hover:text-slate-700 dark:hover:text-white">
+          <i data-lucide="x" class="w-5 h-5"></i>
+        </button>
+      </div>
+
+      <div class="mb-4 bg-violet-50 dark:bg-violet-950/30 border border-violet-200 dark:border-violet-500/20 rounded-xl p-2.5 flex items-center justify-between text-xs text-violet-900 dark:text-violet-200">
+        <span class="flex items-center space-x-1.5">
+          <i data-lucide="sparkles" class="w-3.5 h-3.5 text-pink-500"></i>
+          <span>Want AI to autofill this? Try <strong>Magic AI Split</strong>!</span>
+        </span>
+        <button onclick="app.closeModal('add-expense-modal'); app.openModal('nlp-modal')" class="underline text-pink-600 dark:text-pink-400 font-bold">
+          Try AI &rarr;
+        </button>
+      </div>
+
+      <form id="add-expense-form" onsubmit="app.handleCreateExpense(event)" class="space-y-4">
+        
+        <div class="grid grid-cols-1 sm:grid-cols-3 gap-3">
+          <div class="sm:col-span-2">
+            <label class="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1">Expense Title *</label>
+            <input type="text" id="expense-title-input" required placeholder="e.g. Seafood Dinner at Curlies" class="w-full bg-white dark:bg-slate-900 border border-slate-200 dark:border-white/10 rounded-xl px-3 py-2 text-sm text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-violet-500" />
+          </div>
+          <div>
+            <label class="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1">Category</label>
+            <select id="expense-category-input" class="w-full bg-white dark:bg-slate-900 border border-slate-200 dark:border-white/10 rounded-xl px-3 py-2 text-sm text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-violet-500 cursor-pointer">
+              <option value="food">🍕 Food</option>
+              <option value="drink">🧋 Drink</option>
+              <option value="travel">✈️ Travel</option>
+              <option value="party">🪩 Party</option>
+              <option value="housing">🏠 Housing</option>
+              <option value="vibes">✨ Vibes</option>
+              <option value="other">📦 Other</option>
+            </select>
+          </div>
+        </div>
+
+        <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+          <div>
+            <label class="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1">Total Amount (₹) *</label>
+            <div class="relative">
+              <span class="absolute left-3 top-2 text-slate-400 font-bold">₹</span>
+              <input type="number" step="0.01" id="expense-amount-input" required placeholder="0.00" oninput="app.recalculateSplitsPreview()" class="w-full bg-white dark:bg-slate-900 border border-slate-200 dark:border-white/10 rounded-xl pl-8 pr-3 py-2 text-sm font-bold text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-violet-500" />
+            </div>
+          </div>
+          <div>
+            <label class="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1">Paid By *</label>
+            <select id="expense-payer-select" class="w-full bg-white dark:bg-slate-900 border border-slate-200 dark:border-white/10 rounded-xl px-3 py-2 text-sm text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-violet-500 cursor-pointer">
+              <!-- Render members -->
+            </select>
+          </div>
+        </div>
+
+        <div>
+          <label class="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-2">Split Method</label>
+          <div class="grid grid-cols-3 gap-2 bg-slate-100 dark:bg-slate-900 p-1 rounded-xl">
+            <button type="button" onclick="app.setSplitType('equal')" id="split-tab-equal" class="py-1.5 rounded-lg text-xs font-bold transition bg-violet-600 text-white">
+              = Equal
+            </button>
+            <button type="button" onclick="app.setSplitType('exact')" id="split-tab-exact" class="py-1.5 rounded-lg text-xs font-bold transition text-slate-500 dark:text-slate-400">
+              ₹ Exact
+            </button>
+            <button type="button" onclick="app.setSplitType('percentage')" id="split-tab-percentage" class="py-1.5 rounded-lg text-xs font-bold transition text-slate-500 dark:text-slate-400">
+              % Percent
+            </button>
+          </div>
+        </div>
+
+        <div>
+          <div class="flex items-center justify-between mb-1.5">
+            <span class="text-xs font-semibold text-slate-700 dark:text-slate-300">Participants & Share</span>
+            <span class="text-[10px] text-violet-600 dark:text-violet-400 font-bold" id="split-summary-badge">Equal split</span>
+          </div>
+          <div id="expense-split-members-list" class="space-y-2 max-h-48 overflow-y-auto bg-slate-50 dark:bg-slate-900/60 p-3 rounded-2xl border border-slate-200 dark:border-white/5">
+            <!-- Dynamic checklist -->
+          </div>
+        </div>
+
+        <button type="submit" class="w-full py-3 bg-gradient-to-r from-violet-600 to-pink-600 hover:from-violet-500 hover:to-pink-500 font-display font-bold text-sm text-white rounded-xl shadow-lg transition">
+          Add Expense to Group ⚡
+        </button>
+      </form>
+    </div>
+  </div>
+
+  <!-- MODAL: 🤖 AI MAGIC SPLIT -->
+  <div id="nlp-modal" class="modal-overlay hidden fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-sm">
+    <div class="glass-panel rounded-3xl w-full max-w-lg p-6 shadow-2xl relative">
+      
+      <div class="flex items-center justify-between mb-4">
+        <div class="flex items-center space-x-2.5">
+          <div class="w-9 h-9 rounded-xl bg-pink-100 dark:bg-pink-900/50 text-pink-600 dark:text-pink-300 flex items-center justify-center">
+            <i data-lucide="sparkles" class="w-5 h-5"></i>
+          </div>
+          <div>
+            <h3 class="font-display font-extrabold text-xl text-slate-900 dark:text-white">AI Magic Split</h3>
+            <p class="text-xs text-pink-600 dark:text-pink-300">Describe the expense naturally!</p>
+          </div>
+        </div>
+        <button onclick="app.closeModal('nlp-modal')" class="p-1 rounded-lg text-slate-400 hover:text-slate-700 dark:hover:text-white">
+          <i data-lucide="x" class="w-5 h-5"></i>
+        </button>
+      </div>
+
+      <div class="space-y-4">
+        <div>
+          <label class="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1.5">Prompt:</label>
+          <textarea id="nlp-prompt-input" rows="3" placeholder="e.g. Dhairya paid ₹2,800 for late night Swiggy with Kabir and Tanya" class="w-full bg-white dark:bg-slate-900 border border-slate-200 dark:border-white/10 rounded-xl p-3 text-sm text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-pink-500 transition resize-none"></textarea>
+        </div>
+
+        <div id="nlp-result-box" class="hidden bg-slate-50 dark:bg-slate-900/90 border border-pink-200 dark:border-pink-500/30 rounded-2xl p-4 space-y-3">
+          <div class="flex items-center justify-between text-xs">
+            <span class="font-bold text-pink-600 dark:text-pink-300 uppercase">AI Parsed Result</span>
+            <span class="text-[10px] bg-emerald-100 dark:bg-emerald-500/20 text-emerald-700 dark:text-emerald-300 px-2 py-0.5 rounded-full font-bold">Matched</span>
+          </div>
+          <div class="grid grid-cols-2 gap-2 text-xs">
+            <div><span class="text-slate-500">Title:</span> <strong id="nlp-res-title" class="text-slate-900 dark:text-white"></strong></div>
+            <div><span class="text-slate-500">Amount:</span> <strong id="nlp-res-amount" class="text-emerald-600 dark:text-emerald-400"></strong></div>
+            <div><span class="text-slate-500">Payer:</span> <strong id="nlp-res-payer" class="text-violet-600 dark:text-violet-300"></strong></div>
+            <div><span class="text-slate-500">Category:</span> <strong id="nlp-res-cat" class="text-slate-900 dark:text-white"></strong></div>
+          </div>
+          <div class="text-[11px] text-slate-600 dark:text-slate-300 border-t border-slate-200 dark:border-white/10 pt-2" id="nlp-res-splits"></div>
+        </div>
+
+        <div class="flex space-x-2">
+          <button onclick="app.handleParseNLP()" id="nlp-parse-btn" class="flex-1 py-3 bg-gradient-to-r from-pink-600 to-violet-600 hover:from-pink-500 hover:to-violet-500 font-display font-bold text-sm text-white rounded-xl shadow-lg transition">
+            Parse with AI ✨
+          </button>
+          <button onclick="app.applyNLPExtraction()" id="nlp-apply-btn" class="hidden flex-1 py-3 bg-emerald-600 hover:bg-emerald-500 font-display font-bold text-sm text-white rounded-xl shadow-lg transition">
+            Confirm & Add Expense ⚡
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- MODAL: 💅 GEN-Z DEBT WHISPERER -->
+  <div id="roast-modal" class="modal-overlay hidden fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-sm">
+    <div class="glass-panel rounded-3xl w-full max-w-lg p-6 shadow-2xl relative">
+      
+      <div class="flex items-center justify-between mb-4">
+        <div class="flex items-center space-x-2.5">
+          <div class="w-10 h-10 rounded-2xl bg-pink-100 dark:bg-pink-900/50 text-pink-600 dark:text-pink-300 flex items-center justify-center text-xl">
+            💅
+          </div>
+          <div>
+            <h3 class="font-display font-extrabold text-xl text-slate-900 dark:text-white">Gen-Z Debt Whisperer</h3>
+            <p class="text-xs text-pink-600 dark:text-pink-300">Generate hilarious WhatsApp & iMessage roasts</p>
+          </div>
+        </div>
+        <button onclick="app.closeModal('roast-modal')" class="p-1 rounded-lg text-slate-400 hover:text-slate-700 dark:hover:text-white">
+          <i data-lucide="x" class="w-5 h-5"></i>
+        </button>
+      </div>
+
+      <div class="space-y-4">
+        <div class="bg-slate-50 dark:bg-slate-900/90 border border-slate-200 dark:border-white/5 rounded-2xl p-3.5 text-xs grid grid-cols-2 gap-2">
+          <div><span class="text-slate-500">Target Debtor:</span> <strong id="roast-debtor-name" class="text-slate-900 dark:text-white block font-bold">Friend</strong></div>
+          <div><span class="text-slate-500">Amount:</span> <strong id="roast-amount-val" class="text-pink-600 dark:text-pink-400 block font-bold">₹0.00</strong></div>
+          <div class="col-span-2"><span class="text-slate-500">Expense:</span> <strong id="roast-expense-title" class="text-slate-700 dark:text-slate-200 block">Group Tab</strong></div>
+        </div>
+
+        <div>
+          <label class="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-2">Select Vibe & Tone:</label>
+          <div class="grid grid-cols-2 sm:grid-cols-3 gap-2" id="roast-tone-selector">
+            <button onclick="app.selectRoastTone('passive_aggressive')" data-tone="passive_aggressive" class="roast-tone-pill p-2 rounded-xl border text-xs font-semibold bg-pink-100 border-pink-400 text-pink-800 dark:bg-pink-600/30 dark:border-pink-500 dark:text-pink-200">
+              💅 Bestie Passive
+            </button>
+            <button onclick="app.selectRoastTone('savage')" data-tone="savage" class="roast-tone-pill p-2 rounded-xl border border-slate-200 dark:border-white/10 text-xs font-semibold bg-white dark:bg-slate-800 text-slate-700 dark:text-slate-300">
+              💀 Savage Roast
+            </button>
+            <button onclick="app.selectRoastTone('corporate')" data-tone="corporate" class="roast-tone-pill p-2 rounded-xl border border-slate-200 dark:border-white/10 text-xs font-semibold bg-white dark:bg-slate-800 text-slate-700 dark:text-slate-300">
+              💼 Corporate Gen-Z
+            </button>
+            <button onclick="app.selectRoastTone('sweet')" data-tone="sweet" class="roast-tone-pill p-2 rounded-xl border border-slate-200 dark:border-white/10 text-xs font-semibold bg-white dark:bg-slate-800 text-slate-700 dark:text-slate-300">
+              💖 Sweet Angel
+            </button>
+            <button onclick="app.selectRoastTone('desi_roast')" data-tone="desi_roast" class="roast-tone-pill p-2 rounded-xl border border-slate-200 dark:border-white/10 text-xs font-semibold bg-white dark:bg-slate-800 text-slate-700 dark:text-slate-300">
+              🔥 Desi Roast
+            </button>
+            <button onclick="app.selectRoastTone('shakespeare')" data-tone="shakespeare" class="roast-tone-pill p-2 rounded-xl border border-slate-200 dark:border-white/10 text-xs font-semibold bg-white dark:bg-slate-800 text-slate-700 dark:text-slate-300">
+              📜 Shakespeare
+            </button>
+          </div>
+        </div>
+
+        <div class="bg-slate-50 dark:bg-slate-900 border border-pink-200 dark:border-pink-500/20 rounded-2xl p-4">
+          <p id="roast-output-text" class="text-sm text-slate-800 dark:text-slate-100 font-medium leading-relaxed italic">
+            "Generating spicy roast..."
+          </p>
+          <button onclick="app.generateRoast()" class="mt-3 text-xs text-pink-600 dark:text-pink-400 hover:underline font-semibold flex items-center space-x-1">
+            <i data-lucide="refresh-cw" class="w-3.5 h-3.5"></i>
+            <span>Reroll another punchline</span>
+          </button>
+        </div>
+
+        <div class="grid grid-cols-2 gap-3">
+          <button onclick="app.copyRoastToClipboard()" class="py-2.5 bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 rounded-xl text-xs font-bold text-slate-800 dark:text-white transition flex items-center justify-center space-x-1.5">
+            <i data-lucide="copy" class="w-4 h-4 text-violet-500"></i>
+            <span>Copy Text</span>
+          </button>
+          <a id="roast-whatsapp-link" href="#" target="_blank" class="py-2.5 bg-emerald-600 hover:bg-emerald-500 rounded-xl text-xs font-bold text-white transition flex items-center justify-center space-x-1.5 shadow-md">
+            <i data-lucide="message-circle" class="w-4 h-4"></i>
+            <span>Send WhatsApp</span>
+          </a>
+        </div>
+
+      </div>
+    </div>
+  </div>
+
+  <!-- MODAL: 💸 1-CLICK PAY & QR -->
+  <div id="pay-qr-modal" class="modal-overlay hidden fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-sm">
+    <div class="glass-panel rounded-3xl w-full max-w-sm p-6 shadow-2xl text-center relative">
+      
+      <div class="flex items-center justify-between mb-4">
+        <h3 class="font-display font-extrabold text-lg text-slate-900 dark:text-white">Settle Debt via UPI</h3>
+        <button onclick="app.closeModal('pay-qr-modal')" class="p-1 rounded-lg text-slate-400 hover:text-slate-700 dark:hover:text-white">
+          <i data-lucide="x" class="w-5 h-5"></i>
+        </button>
+      </div>
+
+      <div class="bg-white p-4 rounded-2xl mx-auto w-52 h-52 flex items-center justify-center shadow-lg border border-slate-200 dark:border-white/10 mb-4">
+        <canvas id="upi-qrcode-canvas"></canvas>
+      </div>
+
+      <div class="space-y-1 mb-4">
+        <div class="text-xs text-slate-500">Paying to <strong id="pay-recipient-name" class="text-slate-900 dark:text-white">Friend</strong></div>
+        <div class="text-2xl font-display font-black text-emerald-600 dark:text-emerald-400" id="pay-amount-val">₹0.00</div>
+        <div class="text-xs text-violet-600 dark:text-violet-400 font-mono" id="pay-handle-val">friend@upi</div>
+      </div>
+
+      <button onclick="app.handleDirectSettlementSubmit()" class="w-full py-3 bg-emerald-600 hover:bg-emerald-500 font-display font-bold text-sm text-white rounded-xl shadow-lg transition flex items-center justify-center space-x-2">
+        <i data-lucide="check-circle-2" class="w-4 h-4"></i>
+        <span>I Have Paid & Settle 🎉</span>
+      </button>
+
+    </div>
+  </div>
+
+  <!-- MODAL: 🧾 AI RECEIPT SCANNER -->
+  <div id="receipt-scan-modal" class="modal-overlay hidden fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-sm">
+    <div class="glass-panel rounded-3xl w-full max-w-lg p-6 shadow-2xl relative">
+      <div class="flex items-center justify-between mb-4">
+        <div class="flex items-center space-x-2.5">
+          <div class="w-9 h-9 rounded-xl bg-cyan-100 dark:bg-cyan-900/50 text-cyan-600 dark:text-cyan-300 flex items-center justify-center">
+            <i data-lucide="scan-line" class="w-5 h-5"></i>
+          </div>
+          <div>
+            <h3 class="font-display font-extrabold text-xl text-slate-900 dark:text-white">AI Smart Bill Scanner</h3>
+            <p class="text-xs text-cyan-600 dark:text-cyan-300">Paste receipt text or bill OCR</p>
+          </div>
+        </div>
+        <button onclick="app.closeModal('receipt-scan-modal')" class="p-1 rounded-lg text-slate-400 hover:text-slate-700 dark:hover:text-white">
+          <i data-lucide="x" class="w-5 h-5"></i>
+        </button>
+      </div>
+
+      <div class="space-y-4">
+        <div>
+          <label class="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1">Receipt text / OCR lines:</label>
+          <textarea id="receipt-raw-text" rows="5" class="w-full bg-white dark:bg-slate-900 border border-slate-200 dark:border-white/10 rounded-xl p-3 text-xs font-mono text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-cyan-500 transition resize-none">Curlies Shack Anjuna
+1x Seafood Platter 1800.00
+3x Pina Colada 1200.00
+1x Garlic Butter Naan 150.00
+Service Tax 5% 157.50
+Total 3307.50</textarea>
+        </div>
+
+        <button onclick="app.handleScanReceipt()" class="w-full py-3 bg-cyan-600 hover:bg-cyan-500 font-display font-bold text-sm text-white rounded-xl shadow-lg transition">
+          Extract Items & Convert to Expense ⚡
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- MODAL: CREATE GROUP -->
+  <div id="create-group-modal" class="modal-overlay hidden fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-sm">
+    <div class="glass-panel rounded-3xl w-full max-w-md p-6 shadow-2xl relative">
+      <div class="flex items-center justify-between mb-4">
+        <h3 class="font-display font-extrabold text-xl text-slate-900 dark:text-white">Create New Group</h3>
+        <button onclick="app.closeModal('create-group-modal')" class="p-1 rounded-lg text-slate-400 hover:text-slate-700 dark:hover:text-white">
+          <i data-lucide="x" class="w-5 h-5"></i>
+        </button>
+      </div>
+      <form onsubmit="app.handleCreateGroup(event)" class="space-y-4">
+        <div>
+          <label class="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1">Group Name *</label>
+          <input type="text" id="new-group-name" required placeholder="e.g. Manali Snow Trip 🏔️" class="w-full bg-white dark:bg-slate-900 border border-slate-200 dark:border-white/10 rounded-xl px-3 py-2 text-sm text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-violet-500" />
+        </div>
+        <div class="grid grid-cols-2 gap-3">
+          <div>
+            <label class="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1">Emoji Icon</label>
+            <input type="text" id="new-group-emoji" value="🪩" class="w-full bg-white dark:bg-slate-900 border border-slate-200 dark:border-white/10 rounded-xl px-3 py-2 text-center text-lg text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-violet-500" />
+          </div>
+          <div>
+            <label class="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1">Theme Color</label>
+            <select id="new-group-theme" class="w-full bg-white dark:bg-slate-900 border border-slate-200 dark:border-white/10 rounded-xl px-3 py-2 text-sm text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-violet-500">
+              <option value="violet">🟣 Violet</option>
+              <option value="pink">🌸 Pink</option>
+              <option value="cyan">🔵 Cyan</option>
+              <option value="emerald">🟢 Emerald</option>
+            </select>
+          </div>
+        </div>
+        <div>
+          <label class="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1">Description</label>
+          <input type="text" id="new-group-desc" placeholder="What is this group for?" class="w-full bg-white dark:bg-slate-900 border border-slate-200 dark:border-white/10 rounded-xl px-3 py-2 text-sm text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-violet-500" />
+        </div>
+        <button type="submit" class="w-full py-3 bg-violet-600 hover:bg-violet-500 font-display font-bold text-sm text-white rounded-xl shadow-lg transition">
+          Launch Group 🚀
+        </button>
+      </form>
+    </div>
+  </div>
+
+  <!-- MODAL: ADD MEMBER -->
+  <div id="add-member-modal" class="modal-overlay hidden fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-sm">
+    <div class="glass-panel rounded-3xl w-full max-w-md p-6 shadow-2xl relative">
+      <div class="flex items-center justify-between mb-4">
+        <h3 class="font-display font-extrabold text-xl text-slate-900 dark:text-white">Invite Member to Group</h3>
+        <button onclick="app.closeModal('add-member-modal')" class="p-1 rounded-lg text-slate-400 hover:text-slate-700 dark:hover:text-white">
+          <i data-lucide="x" class="w-5 h-5"></i>
+        </button>
+      </div>
+      <form onsubmit="app.handleAddMember(event)" class="space-y-4">
+        <div>
+          <label class="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1">Username or Email *</label>
+          <input type="text" id="add-member-identifier" required placeholder="e.g. friend_username or friend@email.com" class="w-full bg-white dark:bg-slate-900 border border-slate-200 dark:border-white/10 rounded-xl px-3 py-2 text-sm text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-violet-500" />
+        </div>
+        <p class="text-[11px] text-slate-500 dark:text-slate-400">The user will receive an instant invite notification on their account from any computer! 🔔</p>
+        <button type="submit" class="w-full py-3 bg-violet-600 hover:bg-violet-500 font-display font-bold text-sm text-white rounded-xl shadow-lg transition">
+          Send Invite ✨
+        </button>
+      </form>
+    </div>
+  </div>
+
+  <!-- Main JavaScript Bundle -->
+  <script src="./app.js"></script>
+</body>
+</html>
