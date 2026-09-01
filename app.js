@@ -462,8 +462,14 @@ class VibeSplitApp {
   // --- API Client (Direct Cloud API or Relative Backend with Fail-Safe Fallback) ---
   async api(endpoint, options = {}) {
     const baseUrl = this.customApiUrl || "";
-    const url = baseUrl ? `${baseUrl.replace(/\/$/, '')}${endpoint}` : endpoint;
+    const isStaticHost = window.location.origin.includes("github.io") || window.location.protocol === "file:";
 
+    // If running on static host with no cloud backend URL configured, use client engine directly
+    if (isStaticHost && !baseUrl) {
+      return this.localDataEngine(endpoint, options);
+    }
+
+    const url = baseUrl ? `${baseUrl.replace(/\/$/, '')}${endpoint}` : endpoint;
     const headers = {
       "Content-Type": "application/json",
       ...(this.token ? { "Authorization": `Bearer ${this.token}` } : {}),
@@ -479,28 +485,22 @@ class VibeSplitApp {
       const res = await fetch(url, config);
       const contentType = res.headers.get("content-type") || "";
 
-      // If hosted statically on GitHub Pages without a backend proxy, /api/ returns 404 HTML -> Fallback to client data engine
-      if ((res.status === 404 || !contentType.includes("json")) && (window.location.origin.includes("github.io") || !baseUrl)) {
-        return this.localDataEngine(endpoint, options);
-      }
-
       if (res.status === 401) {
         localStorage.removeItem("vibesplit_token");
         this.token = "";
         this.showAuthView();
       }
 
-      let data;
-      if (contentType.includes("json")) {
-        data = await res.json();
-      } else {
+      // If backend returns HTML (e.g. 404 page), don't call res.json()
+      if (!contentType.includes("json")) {
         const text = await res.text();
-        if (!res.ok) {
-          throw new Error(`Server returned status ${res.status}. Please check your Cloud Backend Settings URL.`);
+        if (isStaticHost || !baseUrl) {
+          return this.localDataEngine(endpoint, options);
         }
-        data = { message: text };
+        throw new Error(`Server returned HTML (${res.status}). Please check your Cloud Backend Settings URL.`);
       }
 
+      const data = await res.json();
       if (!res.ok) {
         let errorMsg = "API request failed";
         if (typeof data.detail === "string") {
@@ -519,7 +519,7 @@ class VibeSplitApp {
       }
       return data;
     } catch (err) {
-      if ((window.location.origin.includes("github.io") || !baseUrl) && (err.message.includes("Unexpected token") || err.message.includes("Failed to fetch") || err.message.includes("status 404") || err.message.includes("HTML"))) {
+      if (isStaticHost || !baseUrl) {
         return this.localDataEngine(endpoint, options);
       }
       console.error(`API [${endpoint}] Error:`, err);
