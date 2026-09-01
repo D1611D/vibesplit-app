@@ -295,8 +295,39 @@ class VibeSplitApp {
     this.currentUser = null;
     this.groups = [];
     this.activeGroup = null;
+    this.activeGroupMembers = [];
+    this.expenses = [];
+    this.balances = null;
+    this.invitations = [];
+    this.pendingRegistration = null;
+
+    // Reset all forms
+    document.getElementById("login-form")?.reset();
+    document.getElementById("register-step1-form")?.reset();
+    document.getElementById("register-step2-otp")?.reset();
+
+    // Clear all DOM containers
+    const groupSelect = document.getElementById("sidebar-group-select");
+    if (groupSelect) groupSelect.innerHTML = "";
+
+    const expList = document.getElementById("expenses-list");
+    if (expList) expList.innerHTML = "";
+
+    const balList = document.getElementById("member-balances-list");
+    if (balList) balList.innerHTML = "";
+
+    const simList = document.getElementById("simplified-debts-list");
+    if (simList) simList.innerHTML = "";
+
+    const invList = document.getElementById("invitations-list-container");
+    if (invList) invList.innerHTML = "";
+
+    const actList = document.getElementById("activity-list");
+    if (actList) actList.innerHTML = "";
+
+    this.backToRegistrationStep1();
     this.showAuthView();
-    this.showToast("Signed out of your personal account safely ✨", "info");
+    this.showToast("Signed out safely! All session data cleared ✨", "info");
   }
 
   // --- Group Invitations & Notification System ---
@@ -1003,6 +1034,8 @@ class VibeSplitApp {
       this.renderBalances();
       this.renderSimplifiedDebts();
 
+      this.renderGroupMembers();
+
       this.updateHeroStats();
       await this.loadActivity();
 
@@ -1014,6 +1047,57 @@ class VibeSplitApp {
       this.refreshIcons();
     } catch (err) {
       console.error("Refresh group data error:", err);
+    }
+  }
+
+  renderGroupMembers() {
+    const memberPill = document.getElementById("group-member-pill");
+    const heroAvatars = document.getElementById("hero-members-avatars-row");
+    const modalTitle = document.getElementById("members-modal-group-title");
+    const fullList = document.getElementById("group-members-full-list");
+
+    const members = this.activeGroupMembers || [];
+    const count = members.length;
+
+    if (memberPill) {
+      memberPill.innerHTML = `<span>👥 ${count} ${count === 1 ? 'Member' : 'Members'}</span>`;
+    }
+
+    if (this.activeGroup && modalTitle) {
+      modalTitle.textContent = `${this.activeGroup.emoji || '🏖️'} ${this.activeGroup.name} Members`;
+    }
+
+    if (heroAvatars) {
+      if (count === 0) {
+        heroAvatars.innerHTML = `<span class="text-xs text-slate-400">No members</span>`;
+      } else {
+        heroAvatars.innerHTML = members.slice(0, 6).map(m => `
+          <img src="${m.avatar_url || `https://api.dicebear.com/7.x/bottts/svg?seed=${m.username}`}" class="inline-block h-7 w-7 rounded-full ring-2 ring-white dark:ring-slate-900 bg-violet-100 dark:bg-violet-900/50 object-cover" title="${m.full_name} (@${m.username})" />
+        `).join("") + (count > 6 ? `<span class="flex items-center justify-center w-7 h-7 rounded-full bg-slate-200 dark:bg-slate-800 text-[10px] font-bold text-slate-700 dark:text-slate-300 ring-2 ring-white dark:ring-slate-900">+${count - 6}</span>` : '');
+      }
+    }
+
+    if (fullList) {
+      if (count === 0) {
+        fullList.innerHTML = `<p class="text-xs text-slate-400 text-center py-4">No members found</p>`;
+      } else {
+        fullList.innerHTML = members.map(m => `
+          <div class="flex items-center justify-between p-3 rounded-2xl bg-white dark:bg-slate-900/80 border border-slate-200 dark:border-white/10 shadow-sm">
+            <div class="flex items-center space-x-3">
+              <img src="${m.avatar_url || `https://api.dicebear.com/7.x/bottts/svg?seed=${m.username}`}" class="w-10 h-10 rounded-xl bg-violet-100 dark:bg-violet-900/40 shrink-0" />
+              <div>
+                <div class="font-bold text-sm text-slate-800 dark:text-white flex items-center space-x-2">
+                  <span>${m.full_name}</span>
+                  <span class="text-[10px] text-slate-400">(@${m.username})</span>
+                  ${m.role === 'admin' ? '<span class="px-1.5 py-0.2 rounded bg-amber-100 text-amber-800 dark:bg-amber-900/40 dark:text-amber-300 text-[9px] font-bold">Admin 👑</span>' : '<span class="px-1.5 py-0.2 rounded bg-slate-100 text-slate-600 dark:bg-slate-800 dark:text-slate-400 text-[9px] font-bold">Member</span>'}
+                  ${m.user_id === this.currentUser?.id ? '<span class="px-1.5 py-0.2 rounded bg-violet-100 text-violet-700 dark:bg-violet-900/40 dark:text-violet-300 text-[9px] font-bold">You</span>' : ''}
+                </div>
+                <div class="text-[11px] text-violet-600 dark:text-violet-400 font-medium mt-0.5">${m.persona || 'Vibe Explorer'} ${m.payment_handle ? `• ${m.payment_handle}` : ''}</div>
+              </div>
+            </div>
+          </div>
+        `).join("");
+      }
     }
   }
 

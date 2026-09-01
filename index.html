@@ -411,13 +411,16 @@
                   <h2 id="group-hero-title" class="font-display font-extrabold text-xl sm:text-2xl text-slate-900 dark:text-white">
                     Welcome to VibeSplit ⚡
                   </h2>
-                  <span id="group-member-pill" class="px-2.5 py-0.5 rounded-full text-xs font-semibold bg-slate-100 dark:bg-white/10 text-slate-600 dark:text-slate-300">
-                    0 Groups
-                  </span>
+                  <button onclick="app.openModal('group-members-modal')" id="group-member-pill" class="px-2.5 py-0.5 rounded-full text-xs font-bold bg-violet-100 hover:bg-violet-200 dark:bg-violet-900/40 dark:hover:bg-violet-900/60 text-violet-700 dark:text-violet-300 transition flex items-center space-x-1 cursor-pointer" title="Click to view all members">
+                    <span>👥 0 Members</span>
+                  </button>
                 </div>
                 <p id="group-hero-desc" class="text-xs sm:text-sm text-slate-500 dark:text-slate-400 mt-1 max-w-lg line-clamp-1">
                   Create your first group tab to start tracking expenses with friends!
                 </p>
+                <div id="hero-members-avatars-row" class="flex items-center -space-x-2 overflow-hidden mt-2 cursor-pointer" onclick="app.openModal('group-members-modal')" title="View group members">
+                  <!-- Dynamic member avatars -->
+                </div>
               </div>
             </div>
 
@@ -1078,7 +1081,38 @@ Total 3307.50</textarea>
     </div>
   </div>
 
+  <!-- MODAL: GROUP MEMBERS LIST -->
+  <div id="group-members-modal" class="modal-overlay hidden fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-sm">
+    <div class="glass-panel rounded-3xl w-full max-w-md p-6 shadow-2xl relative space-y-4">
+      <div class="flex items-center justify-between">
+        <div class="flex items-center space-x-2.5">
+          <div class="w-9 h-9 rounded-xl bg-violet-100 dark:bg-violet-900/50 text-violet-600 dark:text-violet-300 flex items-center justify-center text-lg">
+            👥
+          </div>
+          <div>
+            <h3 class="font-display font-extrabold text-xl text-slate-900 dark:text-white" id="members-modal-group-title">Group Members</h3>
+            <p class="text-xs text-slate-500 dark:text-slate-400">People in this expense tab</p>
+          </div>
+        </div>
+        <button onclick="app.closeModal('group-members-modal')" class="p-1 rounded-lg text-slate-400 hover:text-slate-700 dark:hover:text-white">
+          <i data-lucide="x" class="w-5 h-5"></i>
+        </button>
+      </div>
+
+      <div id="group-members-full-list" class="space-y-2.5 max-h-72 overflow-y-auto">
+        <!-- Dynamic list of members -->
+      </div>
+
+      <div class="pt-2 border-t border-slate-200 dark:border-white/5">
+        <button onclick="app.closeModal('group-members-modal'); app.openModal('add-member-modal');" class="w-full py-2.5 bg-gradient-to-r from-violet-600 to-pink-600 hover:from-violet-500 hover:to-pink-500 text-white font-display font-bold text-xs rounded-xl shadow-md transition flex items-center justify-center space-x-1.5">
+          <i data-lucide="user-plus" class="w-4 h-4"></i>
+          <span>Invite New Member 🚀</span>
+        </button>
+      </div>
+    </div>
+  </div>
+
   <!-- Main JavaScript Bundle -->
-  <script src="./app.js?v=3.0"></script>
+  <script src="./app.js?v=5.0"></script>
 </body>
 </html>
