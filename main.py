@@ -32,7 +32,7 @@ from backend.models import (
     ReceiptScanRequest, ReceiptScanResponse,
     GroupVibeCheckResponse
 )
-from backend.email_service import generate_otp_code, send_verification_email, SMTP_HOST
+from backend.email_service import generate_otp_code, send_verification_email_async, SMTP_HOST, RESEND_API_KEY
 from backend.debt_engine import compute_group_balances
 from backend.ai_service import AIService
 
@@ -82,13 +82,13 @@ async def send_otp(req: SendOTPRequest, db: aiosqlite.Connection = Depends(get_d
     """, (email_clean, otp, expires_at.strftime("%Y-%m-%d %H:%M:%S")))
     await db.commit()
 
-    # Dispatch email
-    send_verification_email(email_clean, otp, req.full_name or "Friend")
+    # Dispatch email async
+    await send_verification_email_async(email_clean, otp, req.full_name or "Friend")
 
     return {
         "message": f"Verification code sent to {email_clean}",
         "email": email_clean,
-        "dev_otp": otp if not SMTP_HOST else None
+        "dev_otp": otp if (not SMTP_HOST and not RESEND_API_KEY) else None
     }
 
 @app.post("/api/auth/verify-otp")
