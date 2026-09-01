@@ -53,6 +53,18 @@ class VibeSplitApp {
             this.showDashboardView();
             await this.loadGroups();
             await this.loadInvitations();
+
+            // Live polling for invites & updates every 4s
+            if (!this.pollInterval) {
+              this.pollInterval = setInterval(async () => {
+                if (this.currentUser) {
+                  await this.loadInvitations();
+                  if (this.activeGroup) {
+                    await this.refreshActiveGroupData();
+                  }
+                }
+              }, 4000);
+            }
           } else {
             this.showAuthView();
           }
@@ -166,17 +178,14 @@ class VibeSplitApp {
       
       const sentText = document.getElementById("otp-sent-to-text");
       if (sentText) {
-        sentText.innerHTML = `We sent a 6-digit code to <strong>${email}</strong>`;
+        sentText.innerHTML = `We sent a 6-digit verification code to <strong>${email}</strong>`;
       }
 
-      if (res.dev_otp) {
-        this.showToast(`Verification code sent! (Code: ${res.dev_otp}) 📧`, "info");
-        const otpInp = document.getElementById("reg-otp-code");
-        if (otpInp) otpInp.value = res.dev_otp;
-      } else {
-        this.showToast(`Verification code dispatched to ${email}! 📧`, "success");
-      }
+      // Keep input blank for real user entry from email inbox
+      const otpInp = document.getElementById("reg-otp-code");
+      if (otpInp) otpInp.value = "";
 
+      this.showToast(`Verification code dispatched to ${email}! Check your inbox 📧`, "success");
       document.getElementById("reg-otp-code")?.focus();
     } catch (err) {
       this.showToast(`Error: ${err.message}`, "error");
@@ -197,7 +206,7 @@ class VibeSplitApp {
     }
 
     try {
-      const res = await this.api("/api/auth/send-otp", {
+      await this.api("/api/auth/send-otp", {
         method: "POST",
         body: JSON.stringify({
           email: this.pendingRegistration.email,
@@ -205,13 +214,10 @@ class VibeSplitApp {
         })
       });
 
-      if (res.dev_otp) {
-        this.showToast(`New code sent! (Code: ${res.dev_otp}) 📧`, "info");
-        const otpInp = document.getElementById("reg-otp-code");
-        if (otpInp) otpInp.value = res.dev_otp;
-      } else {
-        this.showToast(`Fresh verification code sent to ${this.pendingRegistration.email}! 📧`, "success");
-      }
+      const otpInp = document.getElementById("reg-otp-code");
+      if (otpInp) otpInp.value = "";
+
+      this.showToast(`Fresh verification code sent to ${this.pendingRegistration.email}! 📧`, "success");
     } catch (err) {
       this.showToast(`Error: ${err.message}`, "error");
     }

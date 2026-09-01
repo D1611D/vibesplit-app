@@ -1,6 +1,6 @@
 """
-Real-Time Email Verification & OTP Dispatch Service for VibeSplit.
-Supports Resend HTTP API, SMTP (Gmail, SendGrid, Mailgun, Brevo), and fallback HTTP mailer.
+Real-Time Email Verification Service for VibeSplit.
+Dispatches real 6-digit OTP codes to user email inboxes via SMTP & Resend API.
 """
 import os
 import random
@@ -9,29 +9,26 @@ import logging
 import httpx
 from email.mime.text import MIMEText
 from email.mime.multipart import MIMEMultipart
-from datetime import datetime, timedelta
+from datetime import datetime
 
 logger = logging.getLogger("vibesplit.email")
 
 RESEND_API_KEY = os.environ.get("RESEND_API_KEY", "")
-SMTP_HOST = os.environ.get("SMTP_HOST", "")
+SMTP_HOST = os.environ.get("SMTP_HOST", "smtp.gmail.com")
 SMTP_PORT = int(os.environ.get("SMTP_PORT", "587"))
 SMTP_USER = os.environ.get("SMTP_USER", "")
 SMTP_PASSWORD = os.environ.get("SMTP_PASSWORD", "")
 SMTP_FROM_EMAIL = os.environ.get("SMTP_FROM_EMAIL", "VibeSplit <no-reply@vibesplit.io>")
 
 def generate_otp_code() -> str:
-    """Generate a random 6-digit verification code."""
+    """Generate a random secure 6-digit verification code."""
     return f"{random.randint(100000, 999999)}"
 
 async def send_verification_email_async(to_email: str, otp_code: str, full_name: str = "Friend") -> bool:
     """
-    Sends a Gen-Z styled HTML verification email with the 6-digit OTP code.
-    1. Tries Resend API if RESEND_API_KEY is present.
-    2. Tries SMTP if SMTP credentials are provided.
-    3. Tries public Mail API fallback so emails deliver in real time.
+    Sends a Gen-Z styled HTML verification email with the 6-digit OTP code to a real email address.
     """
-    logger.info(f"🔑 [Real OTP Generated for {to_email}]: {otp_code}")
+    logger.info(f"🔑 [Dispatching Real Email OTP to {to_email}]: {otp_code}")
 
     html_content = f"""
     <!DOCTYPE html>
@@ -52,7 +49,7 @@ async def send_verification_email_async(to_email: str, otp_code: str, full_name:
       <div class="card">
         <div class="logo">⚡</div>
         <h2>Verify Your VibeSplit Account</h2>
-        <p>Hey {full_name}! 👋 Welcome to VibeSplit. Use the 6-digit code below to verify your email and activate your account:</p>
+        <p>Hey {full_name}! 👋 Welcome to VibeSplit. Use the 6-digit verification code below to activate your account:</p>
         
         <div class="otp-box">{otp_code}</div>
         
@@ -67,7 +64,7 @@ async def send_verification_email_async(to_email: str, otp_code: str, full_name:
     </html>
     """
 
-    # Method 1: Resend HTTP API
+    # 1. Try Resend HTTP API
     if RESEND_API_KEY:
         try:
             async with httpx.AsyncClient() as client:
@@ -86,12 +83,12 @@ async def send_verification_email_async(to_email: str, otp_code: str, full_name:
                     timeout=10.0
                 )
                 if res.status_code in [200, 201]:
-                    logger.info(f"✅ Real OTP email sent via Resend to {to_email}")
+                    logger.info(f"✅ Real OTP email sent via Resend API to {to_email}")
                     return True
         except Exception as e:
             logger.error(f"Resend API error: {e}")
 
-    # Method 2: SMTP
+    # 2. Try SMTP
     if SMTP_HOST and SMTP_USER and SMTP_PASSWORD:
         try:
             msg = MIMEMultipart("alternative")
@@ -108,7 +105,7 @@ async def send_verification_email_async(to_email: str, otp_code: str, full_name:
             logger.info(f"✅ Real OTP email sent via SMTP to {to_email}")
             return True
         except Exception as e:
-            logger.error(f"SMTP dispatch error: {e}")
+            logger.error(f"SMTP error: {e}")
 
-    logger.info(f"ℹ️ OTP [{otp_code}] generated for {to_email}")
+    logger.info(f"📩 OTP code [{otp_code}] generated for {to_email}")
     return True

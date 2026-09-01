@@ -17,7 +17,6 @@ class VerifyOTPRequest(BaseModel):
 class OTPResponse(BaseModel):
     message: str
     email: str
-    dev_otp: Optional[str] = None
 
 class UserCreate(BaseModel):
     username: str = Field(..., min_length=2, max_length=30)

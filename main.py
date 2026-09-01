@@ -82,13 +82,12 @@ async def send_otp(req: SendOTPRequest, db: aiosqlite.Connection = Depends(get_d
     """, (email_clean, otp, expires_at.strftime("%Y-%m-%d %H:%M:%S")))
     await db.commit()
 
-    # Dispatch email async
+    # Dispatch real email
     await send_verification_email_async(email_clean, otp, req.full_name or "Friend")
 
     return {
-        "message": f"Verification code sent to {email_clean}",
-        "email": email_clean,
-        "dev_otp": otp if (not SMTP_HOST and not RESEND_API_KEY) else None
+        "message": f"Verification code dispatched to {email_clean}",
+        "email": email_clean
     }
 
 @app.post("/api/auth/verify-otp")
