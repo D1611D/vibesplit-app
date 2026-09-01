@@ -1,0 +1,20 @@
+version: '3.8'
+
+services:
+  vibesplit:
+    build: .
+    container_name: vibesplit-app
+    restart: always
+    ports:
+      - "8000:8000"
+    environment:
+      - PORT=8000
+      - HOST=0.0.0.0
+      - VIBESPLIT_JWT_SECRET=super-vibesplit-genz-secret-key-2026-production
+      - VIBESPLIT_DB_PATH=/app/data/vibesplit.db
+    volumes:
+      - vibesplit_data:/app/data
+
+volumes:
+  vibesplit_data:
+    driver: local
